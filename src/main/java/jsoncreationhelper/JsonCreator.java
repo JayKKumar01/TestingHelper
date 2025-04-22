@@ -23,7 +23,6 @@ public class JsonCreator {
         transaction.put("FormID", formId);
         transaction.put("ProductCode", "<ProductCode>");
         transaction.put("DocumentType", "<DocumentType>");
-        transaction.put("Letter", "<Letter>");
         transaction.put("NameInsured", "");
         transaction.put("PolicyFormsData", new JSONObject());
 
@@ -45,19 +44,18 @@ public class JsonCreator {
             String[] pathParts = cleanedXPath.split("\\.");
             if (pathParts.length == 0) continue;
 
-            JSONObject current = ccm;
+            JSONObject current = json;
 
             // Traverse or create nested structure
             for (int i = 0; i < pathParts.length; i++) {
                 String part = pathParts[i];
+                if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
+                    current.put(part, new JSONObject());
+                }
+                current = current.getJSONObject(part);
                 if (i == pathParts.length - 1) {
                     // Final level - insert tag:value
                     current.put(data.getTagName(), data.getSampleData());
-                } else {
-                    if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
-                        current.put(part, new JSONObject());
-                    }
-                    current = current.getJSONObject(part);
                 }
             }
         }
