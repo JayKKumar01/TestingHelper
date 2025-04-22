@@ -9,11 +9,90 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
 public class JsonCreator {
 
     public static void createJson(String formId, List<InputData> models) {
+        JSONObject baseJson = createBaseJson(formId);
+
+        // Maps for holding simple and multi-value tags
+        Map<InputData, List<String>> multiValueMap = new LinkedHashMap<>();
+
+        // Start from baseJson and process single/multi-value inputs
+        for (InputData data : models) {
+            String rawXPath = data.getXPath();
+            if (rawXPath == null || rawXPath.isEmpty()) continue;
+
+            String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
+            String[] pathParts = cleanedXPath.split("\\.");
+            if (pathParts.length == 0) continue;
+
+            String sample = data.getSampleData();
+            boolean isNullOrEmpty = sample == null || sample.trim().isEmpty();
+
+            List<String> values = isNullOrEmpty ? List.of() : List.of(sample.split("\\s*,\\s*"));
+            if (values.size() > 1) {
+                multiValueMap.put(data, values);
+                continue;
+            }
+
+            // Add to General.json (single value or fallback to variableName)
+            JSONObject current = baseJson;
+            for (int i = 0; i < pathParts.length; i++) {
+                String part = pathParts[i];
+                if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
+                    current.put(part, new JSONObject());
+                }
+                current = current.getJSONObject(part);
+                if (i == pathParts.length - 1) {
+                    String value = isNullOrEmpty ? data.getVariableName() : values.get(0);
+                    current.put(data.getTagName(), value);
+                }
+            }
+        }
+
+        // Save General.json
+        saveJsonToFile(baseJson, formId, "General.json");
+
+        // Determine max test cases needed
+        int maxCases = multiValueMap.values().stream()
+                .mapToInt(List::size)
+                .max().orElse(0);
+
+        // Create TestCase1.json ... TestCaseN.json
+        for (int i = 0; i < maxCases; i++) {
+            JSONObject testCaseJson = new JSONObject(baseJson.toString()); // clone base JSON
+
+            for (Map.Entry<InputData, List<String>> entry : multiValueMap.entrySet()) {
+                InputData data = entry.getKey();
+                List<String> valueList = entry.getValue();
+
+                if (i >= valueList.size()) continue; // Skip if this case doesn't have enough data
+
+                String rawXPath = data.getXPath();
+                String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
+                String[] pathParts = cleanedXPath.split("\\.");
+                if (pathParts.length == 0) continue;
+
+                JSONObject current = testCaseJson;
+                for (int j = 0; j < pathParts.length; j++) {
+                    String part = pathParts[j];
+                    if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
+                        current.put(part, new JSONObject());
+                    }
+                    current = current.getJSONObject(part);
+                    if (j == pathParts.length - 1) {
+                        current.put(data.getTagName(), valueList.get(i));
+                    }
+                }
+            }
+
+            saveJsonToFile(testCaseJson, formId, "TestCase" + (i + 1) + ".json");
+        }
+    }
+
+    private static JSONObject createBaseJson(String formId) {
         JSONObject json = new JSONObject();
 
         // Root CCM object
@@ -46,39 +125,18 @@ public class JsonCreator {
         forms.put("FormDescription", "");
         forms.put("TransactionID", "500699096");
 
-        // Process InputData list
-        for (InputData data : models) {
-            String rawXPath = data.getXPath();
-            if (rawXPath == null || rawXPath.isEmpty()) continue;
+        return json;
+    }
 
-            // Remove .{Variable} or {Variable}
-            String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
-            String[] pathParts = cleanedXPath.split("\\.");
-            if (pathParts.length == 0) continue;
+    private static void saveJsonToFile(JSONObject jsonObject, String formId, String fileName) {
+        File outputFile = new File(AppPaths.JSON_OUTPUT_BASE + File.separator + formId + File.separator + fileName);
+        outputFile.getParentFile().mkdirs(); // Ensure directory exists
 
-            JSONObject current = json;
-            for (int i = 0; i < pathParts.length; i++) {
-                String part = pathParts[i];
-                if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
-                    current.put(part, new JSONObject());
-                }
-                current = current.getJSONObject(part);
-
-                // If last node, insert tag and sample value
-                if (i == pathParts.length - 1) {
-                    current.put(data.getTagName(), data.getSampleData());
-                }
-            }
-        }
-
-        // Write to Downloads/Json Files/{formId}/General.json
-        File outputFile = new File(AppPaths.JSON_OUTPUT_BASE + File.separator + formId + File.separator + "General.json");
-        outputFile.getParentFile().mkdirs(); // Ensure directory structure exists
-
-        try (FileWriter fileWriter = new FileWriter(outputFile)) {
-            fileWriter.write(json.toString(4));
-            System.out.println("✅ JSON successfully saved to: " + outputFile.getAbsolutePath());
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            writer.write(jsonObject.toString(4)); // Pretty print
+            System.out.println("✅ JSON saved: " + outputFile.getAbsolutePath());
         } catch (IOException e) {
+            System.err.println("❌ Failed to save JSON: " + outputFile.getAbsolutePath());
             e.printStackTrace();
         }
     }
