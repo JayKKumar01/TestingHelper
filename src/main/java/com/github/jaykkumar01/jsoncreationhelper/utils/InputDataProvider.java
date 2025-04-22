@@ -6,37 +6,25 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
 
-/**
- * Utility class for handling Excel sheet operations and extracting data for PDF comparison.
- */
 public class InputDataProvider {
     private static final DataFormatter formatter = new DataFormatter();
+    private static final String TAG_FILE_PATH = "path_to_your_excel_file.xlsx";
 
-    private static final String TAG_FILE_PATH = "";
-
-    /**
-     * Retrieve the data from the Excel sheet and create a list of DataModel objects.
-     *
-     * @return List of DataModel objects containing PDF paths and other configuration.
-     */
     public static List<InputData> load(String formID) {
         List<InputData> list = new ArrayList<>();
         Iterator<Row> itr = getRowIterator(formID);
 
-        // Check if the iterator is null
         if (itr == null) {
             return null;
         }
 
-        // Skip the header row
+        // Skip header row
         if (itr.hasNext()) {
             itr.next();
         }
@@ -44,30 +32,33 @@ public class InputDataProvider {
         while (itr.hasNext()) {
             Row row = itr.next();
 
-            // Extract cell values for path1, path2, folder, range1, and range2
-            Cell cell1 = row.getCell(0);
-            Cell cell2 = row.getCell(1);
-            Cell cell3 = row.getCell(2);
-            Cell cell4 = row.getCell(3);
+            // Extracting values from columns
+            Cell xpathCell = row.getCell(0);
+            Cell tagNameCell = row.getCell(1);
+            Cell varNameCell = row.getCell(2);
+            Cell sampleDataCell = row.getCell(3);
 
-            // Continue to the next iteration if any of the essential cells is null
-//            if (path1 == null || path2 == null) {
-//                continue;
-//            }
-//
-//            String strPath1 = formatVal(path1);
-//            String strPath2 = formatVal(path2);
-//
-//            // Continue to the next iteration if any of the essential values is null
-//            if (strPath1 == null || strPath2 == null) {
-//                continue;
-//            }
+            // Format the values and check if any required field is empty
+            String xpath = formatVal(xpathCell);
+            String tagName = formatVal(tagNameCell);
+            String variableName = formatVal(varNameCell);
 
-            // Create a DataModel object and add it to the list
-            InputData dataModel = new InputData();
+            // Skip rows where any required field (XPath, TagName, VariableName) is missing or empty
+            if (xpath == null || tagName == null || variableName == null || xpath.isEmpty() || tagName.isEmpty() || variableName.isEmpty()) {
+                continue;  // Skip this row
+            }
 
-            list.add(dataModel);
+            // Create InputData object and populate it
+            InputData inputData = new InputData();
+            inputData.setXPath(xpath);
+            inputData.setTagName(tagName);
+            inputData.setVariableName(variableName);
+            inputData.setSampleData(formatVal(sampleDataCell));
+
+            // Add to the list
+            list.add(inputData);
         }
+
         return list;
     }
 
@@ -80,18 +71,12 @@ public class InputDataProvider {
     }
 
     private static Iterator<Row> getRowIterator(String formID) {
-        FileInputStream fis;
-        XSSFWorkbook wb = null;
-        try {
-            fis = new FileInputStream(TAG_FILE_PATH);
-            wb = new XSSFWorkbook(fis);
-            fis.close();
+        try (FileInputStream fis = new FileInputStream(TAG_FILE_PATH)) {
+            XSSFWorkbook wb = new XSSFWorkbook(fis);
+            return wb.getSheet(formID).rowIterator();
         } catch (IOException e) {
             e.printStackTrace();
-        }
-        if (wb == null) {
             return null;
         }
-        return wb.getSheetAt(0).rowIterator();
     }
 }
