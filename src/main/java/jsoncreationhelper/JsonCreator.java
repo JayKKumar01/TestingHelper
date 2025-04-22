@@ -46,7 +46,7 @@ public class JsonCreator {
                 current = current.getJSONObject(part);
                 if (i == pathParts.length - 1) {
                     String value = isNullOrEmpty ? data.getVariableName() : values.get(0);
-                    current.put(data.getTagName(), value);
+                    current.put(data.getTagName(), normalizeValue(value));
                 }
             }
         }
@@ -82,7 +82,7 @@ public class JsonCreator {
                     }
                     current = current.getJSONObject(part);
                     if (j == pathParts.length - 1) {
-                        current.put(data.getTagName(), valueList.get(i));
+                        current.put(data.getTagName(), normalizeValue(valueList.get(i)));
                     }
                 }
             }
@@ -126,6 +126,12 @@ public class JsonCreator {
 
         return json;
     }
+
+    private static String normalizeValue(String value) {
+        if (value == null) return "";
+        return value.contains("/") ? value.split("/")[0].trim() : value;
+    }
+
 
     private static void saveJsonToFile(JSONObject jsonObject, String formId, String fileName) {
         File outputFile = new File(AppPaths.JSON_OUTPUT_BASE + File.separator + formId + File.separator + fileName);
