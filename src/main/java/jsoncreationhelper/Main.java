@@ -19,6 +19,6 @@ public class Main {
         String filePath = "output.json";
 
         // Create the JSON based on the models and save it to a file
-        JsonCreator.createJson(formId, models, filePath);
+        JsonCreator.createJson(formId, models);
     }
 }
