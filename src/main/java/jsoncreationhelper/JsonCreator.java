@@ -51,37 +51,28 @@ public class JsonCreator {
         // Save General.json
         saveJsonToFile(baseJson, formId, "General.json");
 
-        // Create TC files - each in its own Runnable, run sequentially
         Map<String, Object> baseJsonMap = baseJson.toMap();
-        List<Runnable> tasks = new ArrayList<>();
 
+        // Create TestCase1.json ... TestCaseN.json
         for (int i = 0; i < maxCases; i++) {
-            final int index = i;
-            tasks.add(() -> {
-                JSONObject testCaseJson = new JSONObject(baseJsonMap);
-                for (Map.Entry<InputData, List<String>> entry : multiValueMap.entrySet()) {
-                    InputData data = entry.getKey();
-                    List<String> valueList = entry.getValue();
+            JSONObject testCaseJson = new JSONObject(baseJsonMap);
 
-                    if (index >= valueList.size()) return;
+            for (Map.Entry<InputData, List<String>> entry : multiValueMap.entrySet()) {
+                InputData data = entry.getKey();
+                List<String> valueList = entry.getValue();
 
-                    String rawXPath = data.getXPath();
-                    String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
-                    String[] pathParts = cleanedXPath.split("\\.");
-                    if (pathParts.length == 0) return;
+                if (i >= valueList.size()) continue; // Skip if this case doesn't have enough data
 
-                    insertValue(testCaseJson, rawXPath, data.getTagName(), valueList.get(index));
-                }
+                String rawXPath = data.getXPath();
+                String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
+                String[] pathParts = cleanedXPath.split("\\.");
+                if (pathParts.length == 0) continue;
 
-                saveJsonToFile(testCaseJson, formId, "TC " + (index + 1) + ".json");
-            });
+                insertValue(testCaseJson, rawXPath, data.getTagName(), valueList.get(i));
+            }
+
+            saveJsonToFile(testCaseJson, formId, "TC " + (i + 1) + ".json");
         }
-
-        // Run each task one after another (not in parallel)
-        for (Runnable task : tasks) {
-            task.run();
-        }
-
     }
 
     private static void insertValue(JSONObject root, String rawXPath, String tagName, String value) {
