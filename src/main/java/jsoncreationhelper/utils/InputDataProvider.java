@@ -1,5 +1,7 @@
 package jsoncreationhelper.utils;
 
+import jsoncreationhelper.Config;
+import jsoncreationhelper.constants.AppPaths;
 import jsoncreationhelper.models.InputData;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -14,7 +16,6 @@ import java.util.List;
 
 public class InputDataProvider {
     private static final DataFormatter formatter = new DataFormatter();
-    private static final String TAG_FILE_PATH = "path_to_your_excel_file.xlsx";
 
     public static List<InputData> load(String formID) {
         List<InputData> list = new ArrayList<>();
@@ -71,9 +72,10 @@ public class InputDataProvider {
     }
 
     private static Iterator<Row> getRowIterator(String formID) {
-        try (FileInputStream fis = new FileInputStream(TAG_FILE_PATH)) {
+        try (FileInputStream fis = new FileInputStream(AppPaths.TAG_FILE_PATH)) {
             XSSFWorkbook wb = new XSSFWorkbook(fis);
-            return wb.getSheet(formID).rowIterator();
+            return Config.shouldUseCommon ?
+                    wb.getSheetAt(0).rowIterator() : wb.getSheet(formID).rowIterator();
         } catch (IOException e) {
             e.printStackTrace();
             return null;

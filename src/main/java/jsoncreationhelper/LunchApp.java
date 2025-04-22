@@ -8,16 +8,21 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class LunchApp {
 
+    public static void setUseCommon(boolean useCommon) {
+        Config.shouldUseCommon = useCommon;
+        System.out.println("🔁 Use Common set to: " + useCommon);
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            // Main window
             JFrame frame = new JFrame("JSON Creation");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(600, 400);
+            frame.setSize(600, 450);
             frame.setLayout(new GridBagLayout());
 
             GridBagConstraints gbc = new GridBagConstraints();
@@ -36,18 +41,28 @@ public class LunchApp {
             gbc.gridy = 0;
             frame.add(formIdField, gbc);
 
-            // Button
+            // Create Button
             JButton createButton = new JButton("Create");
             gbc.gridx = 2;
             gbc.gridy = 0;
             frame.add(createButton, gbc);
+
+            // Use Common Checkbox
+            JCheckBox useCommonCheckbox = new JCheckBox("Use Common");
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            gbc.gridwidth = 3;
+            gbc.anchor = GridBagConstraints.WEST;
+            frame.add(useCommonCheckbox, gbc);
+
+            useCommonCheckbox.addActionListener(e -> setUseCommon(useCommonCheckbox.isSelected()));
 
             // Log Area
             JTextArea logArea = new JTextArea(15, 50);
             logArea.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(logArea);
             gbc.gridx = 0;
-            gbc.gridy = 1;
+            gbc.gridy = 2;
             gbc.gridwidth = 3;
             gbc.fill = GridBagConstraints.BOTH;
             gbc.weightx = 1.0;
@@ -71,11 +86,12 @@ public class LunchApp {
             System.setOut(printStream);
             System.setErr(printStream);
 
+
             // Center and show
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
 
-            // Action
+            // Create Button Action
             createButton.addActionListener((ActionEvent e) -> {
                 String formId = formIdField.getText().trim();
                 if (formId.isEmpty()) {
