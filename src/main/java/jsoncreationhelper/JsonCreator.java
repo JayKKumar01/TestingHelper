@@ -2,6 +2,7 @@ package jsoncreationhelper;
 
 import jsoncreationhelper.constants.AppPaths;
 import jsoncreationhelper.models.InputData;
+import jsoncreationhelper.utils.ExcelReportHelper;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -11,6 +12,8 @@ import java.util.*;
 public class JsonCreator {
 
     public static void createJson(String formId, List<InputData> models) {
+        ExcelReportHelper reportHelper = new ExcelReportHelper();
+
         JSONObject baseJson = createBaseJson(formId);
 
         // Maps for holding simple and multi-value tags
@@ -45,7 +48,8 @@ public class JsonCreator {
 
             // Add to General.json (single value or fallback to variableName)
             String value = isNullOrEmpty ? data.getVariableName() : values.get(0);
-            insertValue(baseJson, rawXPath, data.getTagName(), value);
+            insertValue(baseJson, rawXPath, data.getTagName(), value, reportHelper, "General");
+
         }
 
         // Save General.json
@@ -56,6 +60,7 @@ public class JsonCreator {
         // Create TestCase1.json ... TestCaseN.json
         for (int i = 0; i < maxCases; i++) {
             JSONObject testCaseJson = new JSONObject(baseJsonMap);
+            String name = "TC " + (i + 1);
 
             for (Map.Entry<InputData, List<String>> entry : multiValueMap.entrySet()) {
                 InputData data = entry.getKey();
@@ -68,14 +73,17 @@ public class JsonCreator {
                 String[] pathParts = cleanedXPath.split("\\.");
                 if (pathParts.length == 0) continue;
 
-                insertValue(testCaseJson, rawXPath, data.getTagName(), valueList.get(i));
+                insertValue(testCaseJson, rawXPath, data.getTagName(),
+                        valueList.get(i), reportHelper, name);
             }
 
-            saveJsonToFile(testCaseJson, formId, "TC " + (i + 1) + ".json");
+            saveJsonToFile(testCaseJson, formId, name + ".json");
         }
+        reportHelper.save(formId);
     }
 
-    private static void insertValue(JSONObject root, String rawXPath, String tagName, String value) {
+    private static void insertValue(JSONObject root, String rawXPath, String tagName, String value,
+                                    ExcelReportHelper reportHelper, String sheetName) {
         String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
         String[] pathParts = cleanedXPath.split("\\.");
         if (pathParts.length == 0) return;
@@ -88,10 +96,16 @@ public class JsonCreator {
             }
             current = current.getJSONObject(part);
             if (i == pathParts.length - 1) {
-                current.put(tagName, normalizeValue(value));
+                String normalized = normalizeValue(value);
+                current.put(tagName, normalized);
+
+                if (reportHelper != null) {
+                    reportHelper.addEntry(sheetName, cleanedXPath, tagName, normalized);
+                }
             }
         }
     }
+
 
 
     private static JSONObject createBaseJson(String formId) {
