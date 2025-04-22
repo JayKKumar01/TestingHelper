@@ -5,10 +5,8 @@ import jsoncreationhelper.models.InputData;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class JsonCreator {
@@ -23,6 +21,7 @@ public class JsonCreator {
         for (InputData data : models) {
             String rawXPath = data.getXPath();
             if (rawXPath == null || rawXPath.isEmpty()) continue;
+
 
             String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
             String[] pathParts = cleanedXPath.split("\\.");
@@ -132,8 +131,11 @@ public class JsonCreator {
         File outputFile = new File(AppPaths.JSON_OUTPUT_BASE + File.separator + formId + File.separator + fileName);
         outputFile.getParentFile().mkdirs(); // Ensure directory exists
 
-        try (FileWriter writer = new FileWriter(outputFile)) {
-            writer.write(jsonObject.toString(4)); // Pretty print
+
+
+
+        try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) {
+            writer.write(jsonObject.toString(4)); // pretty print
             System.out.println("✅ JSON saved: " + outputFile.getAbsolutePath());
         } catch (IOException e) {
             System.err.println("❌ Failed to save JSON: " + outputFile.getAbsolutePath());
