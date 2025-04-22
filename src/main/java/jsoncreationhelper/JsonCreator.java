@@ -9,71 +9,63 @@ import java.util.List;
 
 public class JsonCreator {
 
-    // Method to generate JSON from InputData
     public static void createJson(String formId, List<InputData> models, String filePath) {
-        // Base structure of the JSON
         JSONObject json = new JSONObject();
 
-        // Create the root object for CCM
+        // Root CCM object
         JSONObject ccm = new JSONObject();
         json.put("CCM", ccm);
 
-        // Create the Transaction object inside CCM
+        // Transaction block
         JSONObject transaction = new JSONObject();
         ccm.put("Transaction", transaction);
-
-        // Set fixed values
         transaction.put("TransactionID", "500699096");
         transaction.put("FormID", formId);
         transaction.put("ProductCode", "<ProductCode>");
         transaction.put("DocumentType", "<DocumentType>");
         transaction.put("Letter", "<Letter>");
         transaction.put("NameInsured", "");
+        transaction.put("PolicyFormsData", new JSONObject());
 
-        // Create PolicyFormsData object (this will remain empty for now)
-        JSONObject policyFormsData = new JSONObject();
-        transaction.put("PolicyFormsData", policyFormsData);
-
-        // Create Forms object inside Transaction
+        // Forms block
         JSONObject forms = new JSONObject();
         transaction.put("Forms", forms);
-
-        // Add formID, description, and transactionID for Forms
         forms.put("FormID", formId);
         forms.put("FormDescription", "");
         forms.put("TransactionID", "500699096");
 
-        // Iterate over the models to add dynamic fields from InputData
+        // Process InputData list
         for (InputData data : models) {
-            // Extract the XPath and VariableName to dynamically update the JSON
-            String[] pathParts = data.getXPath().split("\\.");
+            String rawXPath = data.getXPath();
+            if (rawXPath == null || rawXPath.isEmpty()) continue;
 
-            // Start with the root of the JSON (CCM)
+            // Remove any .{Variable} or {Variable} from path
+            String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
+
+            String[] pathParts = cleanedXPath.split("\\.");
+            if (pathParts.length == 0) continue;
+
             JSONObject current = ccm;
 
-            for (String part : pathParts) {
-                // Check if the part is a variable (e.g., {Variable Name})
-                if (part.contains("{")) {
-                    part = data.getVariableName();
+            // Traverse or create nested structure
+            for (int i = 0; i < pathParts.length; i++) {
+                String part = pathParts[i];
+                if (i == pathParts.length - 1) {
+                    // Final level - insert tag:value
+                    current.put(data.getTagName(), data.getSampleData());
+                } else {
+                    if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
+                        current.put(part, new JSONObject());
+                    }
+                    current = current.getJSONObject(part);
                 }
-
-                // Create the part if it doesn't exist
-                if (!current.has(part)) {
-                    current.put(part, new JSONObject());
-                }
-
-                // Move to the next level in the JSON
-                current = current.getJSONObject(part);
             }
-
-            // Add the sample data to the last node
-            current.put(data.getVariableName(), data.getSampleData());
         }
 
-        // Write the JSON to a file
+        // Write the result
         try (FileWriter file = new FileWriter(filePath)) {
-            file.write(json.toString(4)); // Pretty print with indentation of 4
-            System.out.println("Successfully written JSON to " + filePath);
+            file.write(json.toString(4));
+            System.out.println("✅ JSON successfully written to: " + filePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
