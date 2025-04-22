@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LunchApp {
 
@@ -99,16 +101,23 @@ public class LunchApp {
                     return;
                 }
 
-                List<InputData> models = InputDataProvider.load(formId);
-                if (models == null || models.isEmpty()) {
-                    System.out.println("❌ No input data found for Form ID: " + formId);
-                    JOptionPane.showMessageDialog(frame, "No input data found for Form ID: " + formId, "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                ExecutorService service = Executors.newSingleThreadExecutor();
+                service.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        List<InputData> models = InputDataProvider.load(formId);
+                        if (models == null || models.isEmpty()) {
+                            System.out.println("❌ No input data found for Form ID: " + formId);
+                            JOptionPane.showMessageDialog(frame, "No input data found for Form ID: " + formId, "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
 
-                System.out.println("🚀 Starting JSON creation for Form ID: " + formId);
-                JsonCreator.createJson(formId, models);
-                System.out.println("✅ JSON created successfully for Form ID: " + formId);
+                        System.out.println("🚀 Starting JSON creation for Form ID: " + formId);
+                        JsonCreator.createJson(formId, models);
+                    }
+                });
+
+
             });
         });
     }
