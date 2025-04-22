@@ -13,16 +13,34 @@ import java.util.Map;
 public class ExcelReportHelper {
     private final XSSFWorkbook workbook = new XSSFWorkbook();
     private final Map<String, XSSFSheet> sheets = new LinkedHashMap<>();
+    private final CellStyle headerStyle;
+
+    public ExcelReportHelper() {
+        // Create header style: green background + bold font
+        headerStyle = workbook.createCellStyle();
+
+        // Green background
+        headerStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // Bold font
+        Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        headerStyle.setFont(boldFont);
+    }
 
     public void addEntry(String sheetName, String xpath, String tagName, String value) {
         XSSFSheet sheet = sheets.computeIfAbsent(sheetName, name -> {
             XSSFSheet newSheet = workbook.createSheet(name);
             Row header = newSheet.createRow(0);
-            header.createCell(0).setCellValue("XPath");
-            header.createCell(1).setCellValue("TagName");
-            header.createCell(2).setCellValue("Value");
-            header.createCell(3).setCellValue("Exists");
-            header.createCell(4).setCellValue("Status");
+
+            String[] headers = { "XPath", "TagName", "Value", "Presence", "Status" };
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
             return newSheet;
         });
 
@@ -31,6 +49,10 @@ public class ExcelReportHelper {
         row.createCell(0).setCellValue(xpath);
         row.createCell(1).setCellValue(tagName);
         row.createCell(2).setCellValue(value);
+        // Auto-size columns after each new entry
+        for (int i = 0; i <= 4; i++) {
+            sheet.autoSizeColumn(i);
+        }
     }
 
     public void save(String formId) {
