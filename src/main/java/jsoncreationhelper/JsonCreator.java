@@ -6,7 +6,6 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class JsonCreator {
@@ -32,8 +31,9 @@ public class JsonCreator {
             boolean isNullOrEmpty = sample == null || sample.trim().isEmpty();
 
             List<String> values = isNullOrEmpty
-                    ? List.of()
+                    ? Collections.emptyList()
                     : List.of(sample.split("\\s*[,/]+\\s*"));
+
 
             if (values.size() > 1) {
                 multiValueMap.put(data, values);
@@ -42,26 +42,18 @@ public class JsonCreator {
             }
 
             // Add to General.json (single value or fallback to variableName)
-            JSONObject current = baseJson;
-            for (int i = 0; i < pathParts.length; i++) {
-                String part = pathParts[i];
-                if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
-                    current.put(part, new JSONObject());
-                }
-                current = current.getJSONObject(part);
-                if (i == pathParts.length - 1) {
-                    String value = isNullOrEmpty ? data.getVariableName() : values.get(0);
-                    current.put(data.getTagName(), normalizeValue(value));
-                }
-            }
+            String value = isNullOrEmpty ? data.getVariableName() : values.get(0);
+            insertValue(baseJson, rawXPath, data.getTagName(), value);
         }
 
         // Save General.json
         saveJsonToFile(baseJson, formId, "General.json");
 
+        Map<String, Object> baseJsonMap = baseJson.toMap();
+        
         // Create TestCase1.json ... TestCaseN.json
         for (int i = 0; i < maxCases; i++) {
-            JSONObject testCaseJson = new JSONObject(baseJson.toString()); // clone base JSON
+            JSONObject testCaseJson = new JSONObject(baseJsonMap);
 
             for (Map.Entry<InputData, List<String>> entry : multiValueMap.entrySet()) {
                 InputData data = entry.getKey();
@@ -74,22 +66,31 @@ public class JsonCreator {
                 String[] pathParts = cleanedXPath.split("\\.");
                 if (pathParts.length == 0) continue;
 
-                JSONObject current = testCaseJson;
-                for (int j = 0; j < pathParts.length; j++) {
-                    String part = pathParts[j];
-                    if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
-                        current.put(part, new JSONObject());
-                    }
-                    current = current.getJSONObject(part);
-                    if (j == pathParts.length - 1) {
-                        current.put(data.getTagName(), normalizeValue(valueList.get(i)));
-                    }
-                }
+                insertValue(testCaseJson, rawXPath, data.getTagName(), valueList.get(i));
             }
 
             saveJsonToFile(testCaseJson, formId, "TC " + (i + 1) + ".json");
         }
     }
+
+    private static void insertValue(JSONObject root, String rawXPath, String tagName, String value) {
+        String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
+        String[] pathParts = cleanedXPath.split("\\.");
+        if (pathParts.length == 0) return;
+
+        JSONObject current = root;
+        for (int i = 0; i < pathParts.length; i++) {
+            String part = pathParts[i];
+            if (!current.has(part) || !(current.get(part) instanceof JSONObject)) {
+                current.put(part, new JSONObject());
+            }
+            current = current.getJSONObject(part);
+            if (i == pathParts.length - 1) {
+                current.put(tagName, normalizeValue(value));
+            }
+        }
+    }
+
 
     private static JSONObject createBaseJson(String formId) {
         JSONObject json = new JSONObject();
