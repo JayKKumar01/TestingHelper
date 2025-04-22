@@ -171,9 +171,12 @@ public class JsonCreator {
 
 
     private static void saveJsonToFile(JSONObject jsonObject, String formId, String fileName) {
-        File outputFile = new File(AppPaths.JSON_OUTPUT_BASE + File.separator + formId + File.separator + fileName);
-        outputFile.getParentFile().mkdirs(); // Ensure directory exists
+        // Conditionally include "common" in the path
+        String folderPath = AppPaths.JSON_OUTPUT_BASE + File.separator + formId
+                + (Config.shouldUseCommon ? File.separator + "common" : "");
 
+        File outputFile = new File(folderPath, fileName);
+        outputFile.getParentFile().mkdirs(); // Ensure directory exists
 
         try (FileWriter writer = new FileWriter(outputFile)) {
             writer.write(jsonObject.toString(4)); // Pretty print
@@ -183,4 +186,5 @@ public class JsonCreator {
             e.printStackTrace();
         }
     }
+
 }

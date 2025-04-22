@@ -1,5 +1,6 @@
 package jsoncreationhelper.utils;
 
+import jsoncreationhelper.Config;
 import jsoncreationhelper.constants.AppPaths;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
@@ -96,13 +97,19 @@ public class ExcelReportHelper {
     public void save(String formId) {
         // Base file name with formId
         String baseFileName = "Report_" + formId + ".xlsx";
-        File file = new File(AppPaths.JSON_OUTPUT_BASE + File.separator + formId + File.separator + baseFileName);
+
+        // Build the path conditionally based on shouldUseCommon
+        String folderPath = AppPaths.JSON_OUTPUT_BASE + File.separator + formId
+                + (Config.shouldUseCommon ? File.separator + "common" : "")
+                + File.separator + "Reports";
+
+        File file = new File(folderPath, baseFileName);
 
         // Check if the file already exists, and if so, increment the index
         int fileIndex = 1;
         while (file.exists()) {
             String newFileName = "Report_" + formId + "(" + fileIndex + ").xlsx";
-            file = new File(AppPaths.JSON_OUTPUT_BASE + File.separator + formId + File.separator + newFileName);
+            file = new File(folderPath, newFileName);
             fileIndex++;
         }
 
@@ -121,4 +128,6 @@ public class ExcelReportHelper {
             }
         }
     }
+
+
 }
