@@ -16,6 +16,7 @@ public class JsonCreator {
 
         // Maps for holding simple and multi-value tags
         Map<InputData, List<String>> multiValueMap = new LinkedHashMap<>();
+        int maxCases = 0;
 
         // Start from baseJson and process single/multi-value inputs
         for (InputData data : models) {
@@ -30,9 +31,13 @@ public class JsonCreator {
             String sample = data.getSampleData();
             boolean isNullOrEmpty = sample == null || sample.trim().isEmpty();
 
-            List<String> values = isNullOrEmpty ? List.of() : List.of(sample.split("\\s*,\\s*"));
+            List<String> values = isNullOrEmpty
+                    ? List.of()
+                    : List.of(sample.split("\\s*[,/]+\\s*"));
+
             if (values.size() > 1) {
                 multiValueMap.put(data, values);
+                maxCases = Math.max(maxCases,values.size());
                 continue;
             }
 
@@ -53,11 +58,6 @@ public class JsonCreator {
 
         // Save General.json
         saveJsonToFile(baseJson, formId, "General.json");
-
-        // Determine max test cases needed
-        int maxCases = multiValueMap.values().stream()
-                .mapToInt(List::size)
-                .max().orElse(0);
 
         // Create TestCase1.json ... TestCaseN.json
         for (int i = 0; i < maxCases; i++) {
@@ -87,7 +87,7 @@ public class JsonCreator {
                 }
             }
 
-            saveJsonToFile(testCaseJson, formId, "TestCase" + (i + 1) + ".json");
+            saveJsonToFile(testCaseJson, formId, "TC " + (i + 1) + ".json");
         }
     }
 
@@ -127,10 +127,30 @@ public class JsonCreator {
         return json;
     }
 
+    private static String sanitize(String value) {
+        if (value == null) return null;
+        return value
+                .replace("\u2018", "'")
+                .replace("\u2019", "'")
+                .replace("\u201C", "\"")
+                .replace("\u201D", "\"")
+                .replace("\u2013", "-")
+                .replace("\u2014", "-")
+                .replace("\u00A0", " ") // non-breaking space
+                .trim();
+    }
+
+
     private static String normalizeValue(String value) {
         if (value == null) return "";
+
+        // Sanitize first
+        value = sanitize(value);
+
+        // Then handle slash-splitting logic
         return value.contains("/") ? value.split("/")[0].trim() : value;
     }
+
 
 
     private static void saveJsonToFile(JSONObject jsonObject, String formId, String fileName) {
@@ -138,10 +158,8 @@ public class JsonCreator {
         outputFile.getParentFile().mkdirs(); // Ensure directory exists
 
 
-
-
-        try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) {
-            writer.write(jsonObject.toString(4)); // pretty print
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            writer.write(jsonObject.toString(4)); // Pretty print
             System.out.println("✅ JSON saved: " + outputFile.getAbsolutePath());
         } catch (IOException e) {
             System.err.println("❌ Failed to save JSON: " + outputFile.getAbsolutePath());
