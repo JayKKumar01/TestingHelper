@@ -1,6 +1,6 @@
-package com.github.jaykkumar01.jsoncreationhelper.utils;
+package jsoncreationhelper.utils;
 
-import com.github.jaykkumar01.jsoncreationhelper.models.InputData;
+import jsoncreationhelper.models.InputData;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;

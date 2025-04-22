@@ -1,4 +1,4 @@
-package com.github.jaykkumar01.jsoncreationhelper.models;
+package jsoncreationhelper.models;
 
 public class InputData {
     private String xPath;

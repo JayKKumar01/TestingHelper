@@ -1,9 +1,8 @@
-package com.github.jaykkumar01.jsoncreationhelper;
+package jsoncreationhelper;
 
-import com.github.jaykkumar01.jsoncreationhelper.models.InputData;
+import jsoncreationhelper.models.InputData;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;

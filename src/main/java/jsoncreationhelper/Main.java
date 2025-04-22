@@ -1,7 +1,7 @@
-package com.github.jaykkumar01.jsoncreationhelper;
+package jsoncreationhelper;
 
-import com.github.jaykkumar01.jsoncreationhelper.models.InputData;
-import com.github.jaykkumar01.jsoncreationhelper.utils.InputDataProvider;
+import jsoncreationhelper.models.InputData;
+import jsoncreationhelper.utils.InputDataProvider;
 
 import java.util.List;
 
