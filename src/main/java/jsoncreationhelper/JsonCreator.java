@@ -21,7 +21,6 @@ public class JsonCreator {
         int maxCases = 0;
 
 
-
         // Start from baseJson and process single/multi-value inputs
         for (InputData data : models) {
             String rawXPath = data.getXPath();
@@ -37,18 +36,19 @@ public class JsonCreator {
 
             List<String> values = isNullOrEmpty
                     ? Collections.emptyList()
-                    : List.of(sample.split("\\s*[,/]+\\s*"));
+                    : List.of(sample.split(","));
 
 
             if (values.size() > 1) {
                 multiValueMap.put(data, values);
                 maxCases = Math.max(maxCases,values.size());
+                insertValue(baseJson, rawXPath, data.getTagName(), "", reportHelper, "General", false);
                 continue;
             }
 
             // Add to General.json (single value or fallback to variableName)
             String value = isNullOrEmpty ? data.getVariableName() : values.get(0);
-            insertValue(baseJson, rawXPath, data.getTagName(), value, reportHelper, "General");
+            insertValue(baseJson, rawXPath, data.getTagName(), value, reportHelper, "General", true);
 
         }
 
@@ -66,15 +66,15 @@ public class JsonCreator {
                 InputData data = entry.getKey();
                 List<String> valueList = entry.getValue();
 
-                if (i >= valueList.size()) continue; // Skip if this case doesn't have enough data
-
                 String rawXPath = data.getXPath();
                 String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
                 String[] pathParts = cleanedXPath.split("\\.");
                 if (pathParts.length == 0) continue;
 
+                boolean shouldAddToReport = i < valueList.size();
+
                 insertValue(testCaseJson, rawXPath, data.getTagName(),
-                        valueList.get(i), reportHelper, name);
+                        shouldAddToReport ? valueList.get(i) : "", reportHelper, name,shouldAddToReport);
             }
 
             saveJsonToFile(testCaseJson, formId, name + ".json");
@@ -83,7 +83,7 @@ public class JsonCreator {
     }
 
     private static void insertValue(JSONObject root, String rawXPath, String tagName, String value,
-                                    ExcelReportHelper reportHelper, String sheetName) {
+                                    ExcelReportHelper reportHelper, String sheetName, boolean shouldAddToReport) {
         String cleanedXPath = rawXPath.replaceAll("\\.?\\{[^}]+}", "");
         String[] pathParts = cleanedXPath.split("\\.");
         if (pathParts.length == 0) return;
@@ -99,7 +99,7 @@ public class JsonCreator {
                 String normalized = normalizeValue(value);
                 current.put(tagName, normalized);
 
-                if (reportHelper != null) {
+                if (reportHelper != null && shouldAddToReport) {
                     reportHelper.addEntry(sheetName, cleanedXPath, tagName, normalized);
                 }
             }
@@ -162,10 +162,10 @@ public class JsonCreator {
         if (value == null) return "";
 
         // Sanitize first
-        value = sanitize(value);
+        return sanitize(value);
 
         // Then handle slash-splitting logic
-        return value.contains("/") ? value.split("/")[0].trim() : value;
+//        return value.contains("/") ? value.split("/")[0].trim() : value;
     }
 
 
