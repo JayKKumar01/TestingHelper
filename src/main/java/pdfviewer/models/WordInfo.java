@@ -88,6 +88,22 @@ public class WordInfo {
         this.boundingBox = boundingBox;
     }
 
+    public Font getAWTFont() {
+        try {
+            String fontName = getFontName();
+            int style = getFontStyle().toLowerCase().contains("bold") ? Font.BOLD : Font.PLAIN;
+            if (getFontStyle().toLowerCase().contains("italic") || getFontStyle().toLowerCase().contains("oblique")) {
+                style |= Font.ITALIC;
+            }
+            int size = getFontSize();
+            return new Font(fontName, style, size);
+        } catch (Exception e) {
+            // Fallback in case of error
+            return new Font("Serif", Font.PLAIN, 12);
+        }
+    }
+
+
     public String getDetails() {
         return word + "\n" +
                 "Font: " + getFontName() + "\n" +

@@ -15,7 +15,7 @@ public class PDFPanel extends JPanel {
     private BufferedImage currentImage;
     private List<WordInfo> currentWords;
 
-    public PDFPanel(PDFController controller, JTextArea infoArea) {
+    public PDFPanel(PDFController controller, JEditorPane infoArea) {
         this.controller = controller;
         updateContent();
 
@@ -39,6 +39,35 @@ public class PDFPanel extends JPanel {
                 for (WordInfo word : currentWords) {
                     Rectangle box = word.getBoundingBox();
                     if (box != null && box.contains(imgX, imgY)) {
+                        Font wordFont = word.getAWTFont();
+                        Font normalFont = new Font("Serif", Font.PLAIN, 14);
+
+                        String details = word.getDetails();
+                        String[] lines = details.split("\n");
+
+                        // Use HTML to support font changes
+                        StringBuilder html = new StringBuilder("<html>");
+                        html.append("<span style='font-family:")
+                                .append(wordFont.getFamily())
+                                .append("; font-size:")
+                                .append(wordFont.getSize())
+                                .append("pt;'>")
+                                .append(lines[0])
+                                .append("</span><br>");
+
+                        for (int i = 1; i < lines.length; i++) {
+                            html.append("<span style='font-family:")
+                                    .append(normalFont.getFamily())
+                                    .append("; font-size:")
+                                    .append(normalFont.getSize())
+                                    .append("pt;'>")
+                                    .append(lines[i])
+                                    .append("</span><br>");
+                        }
+                        html.append("</html>");
+                        infoArea.setContentType("text/html");
+                        infoArea.setText(html.toString());
+
                         infoArea.setText(word.getDetails());
                         return;
                     }

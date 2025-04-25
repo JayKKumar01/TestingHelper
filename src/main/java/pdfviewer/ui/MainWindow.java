@@ -13,8 +13,11 @@ public class MainWindow extends JFrame {
 
         PDFController controller = new PDFController(pdfPath);
 
-        JTextArea infoArea = new JTextArea(5, 20);
+        JEditorPane infoArea = new JEditorPane();
         infoArea.setEditable(false);
+        infoArea.setContentType("text/html");
+        infoArea.setPreferredSize(new Dimension(250, 0)); // Set width for the pane
+
         JScrollPane infoScrollPane = new JScrollPane(infoArea);
 
         PDFPanel pdfPanel = new PDFPanel(controller, infoArea);
