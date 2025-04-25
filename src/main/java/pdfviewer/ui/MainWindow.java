@@ -8,6 +8,7 @@ import java.io.File;
 
 public class MainWindow extends JFrame {
     private PDFController controller;
+    private String lastSelectedDirectory;  // Store the last selected directory
 
     public MainWindow() {
         setTitle("PDF Viewer");
@@ -24,22 +25,35 @@ public class MainWindow extends JFrame {
         initialPanel.add(choosePdfButton, BorderLayout.CENTER);
 
         add(initialPanel, BorderLayout.CENTER);
-        setSize(1000, 700);
+        setSize(400, 300);
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
     private void choosePdf() {
         FileDialog fileDialog = new FileDialog((Frame) null, "Select PDF", FileDialog.LOAD);
+
+        // Open the file dialog to the last selected directory, if available
+        if (lastSelectedDirectory != null) {
+            fileDialog.setDirectory(lastSelectedDirectory);
+        }
+
         fileDialog.setVisible(true);
 
         String filename = fileDialog.getFile();
         if (filename != null) {
+            if (!filename.toLowerCase().endsWith(".pdf")) {
+                JOptionPane.showMessageDialog(this, "Only PDF files are supported.", "Invalid File", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             File selected = new File(fileDialog.getDirectory(), filename);
+            lastSelectedDirectory = selected.getParent();  // Update the last selected directory
             String pdfPath = selected.getAbsolutePath();
             initializePdfViewer(pdfPath);
         }
     }
+
 
     private void initializePdfViewer(String pdfPath) {
         // Hide the initial "Choose PDF" screen
@@ -98,21 +112,35 @@ public class MainWindow extends JFrame {
         add(eastPanel, BorderLayout.EAST);
         add(bottomPanel, BorderLayout.NORTH);
 
+
         // Revalidate and repaint to show the PDF viewer
+        setSize(1000, 700);  // Expand window after PDF is loaded
+        setLocationRelativeTo(null);  // Center again after resize
         revalidate();
         repaint();
+
     }
 
     private void goBackToFileChooser() {
-        // Remove the current layout and show the file chooser again
+        // Remove all the components in the current window and show the initial "Choose PDF" button
         getContentPane().removeAll();
-        SwingUtilities.invokeLater(() -> new MainWindow());
+
+        // Re-add the initial panel with the "Choose PDF" button
+        JButton choosePdfButton = new JButton("Choose PDF");
+        choosePdfButton.addActionListener(e -> choosePdf());
+
+        JPanel initialPanel = new JPanel();
+        initialPanel.setLayout(new BorderLayout());
+        initialPanel.add(choosePdfButton, BorderLayout.CENTER);
+
+        add(initialPanel, BorderLayout.CENTER);
+
+        // Revalidate and repaint to show the PDF viewer
+        setSize(400, 300);  // Expand window after PDF is loaded
+        setLocationRelativeTo(null);  // Center again after resize
         revalidate();
         repaint();
+
     }
 
-    public static void main(String[] args) {
-        // Start the application
-        SwingUtilities.invokeLater(() -> new MainWindow());
-    }
 }
