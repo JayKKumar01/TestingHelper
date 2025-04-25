@@ -14,7 +14,7 @@ public class PdfWordExtractor {
     private static final float DPI = 200f;
     private static final float POINTS_PER_INCH = 72f;
     private static final float SCALE = DPI / POINTS_PER_INCH;
-    private static final float PADDING = 1f;
+    private static final float PADDING = 3f;
 
     public static List<WordInfo> extractWords(PDDocument document, int pageNum) throws IOException {
         List<WordInfo> wordInfoList = new ArrayList<>();
@@ -34,7 +34,6 @@ public class PdfWordExtractor {
                         for (int j = i; j < len && j < textPositions.size(); j++) {
                             positions.add(textPositions.get(j));
                         }
-                        System.out.println(word + ": " +positions.size());
                         WordInfo wordInfo = new WordInfo(word, positions);
 
                         Rectangle bounds = calculateBoundingBox(positions);
